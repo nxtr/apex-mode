@@ -34,8 +34,18 @@
 
 (defun my-apex-mode-hook ()
   (c-set-offset 'arglist-intro '+)
-  (c-set-offset 'topmost-intro-cont 0)) ; dirty fix for apex coll initializer
+  (c-set-offset 'topmost-intro-cont 0)  ; dirty fix for apex coll initializer
+  #'linum-on)
+
 (add-hook 'apex-mode-hook 'my-apex-mode-hook)
+
+(add-to-list 'load-path (expand-file-name "~/salesforce"))
+(require 'salesforce)
+
+(add-to-list
+ 'compilation-error-regexp-alist-alist
+ '(ap
+   "[0-9]+\.  \\(.+?\\) -- Error:.+?(line \\([0-9]+\\), column \\([0-9]+\\))$" 1 2 3))
 
 (provide 'apex-mode)
 
