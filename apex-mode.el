@@ -1,9 +1,9 @@
 ;;; apex-mode.el -- Major mode for Salesforce Apex files
 
-;; Copyright (C) 2015  Magnus Nyberg
+;; Copyright (C) 2016 Magnus Nyberg
 
 ;; Author: Magnus Nyberg <magnus@nexter.se>
-;; Keywords: apex, languages, salesforce
+;; Keywords: languages, apex, force, sfdc, salesforce
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -49,4 +49,8 @@
 
 (provide 'apex-mode)
 
-;;; end of apex-mode.el
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; End:
+
+;;; apex-mode.el ends here
