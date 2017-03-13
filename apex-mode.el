@@ -164,7 +164,7 @@ This construct is \"<keyword> <expression> :\"."
 
 (c-lang-defconst c-inexpr-class-kwds
   "Keywords that can start classes inside expressions."
-  t '("new"))
+  t nil)
 
 (c-lang-defconst c-inexpr-brace-list-kwds
   "Keywords that can start brace list blocks inside expressions.
