@@ -1,6 +1,6 @@
 ;;; apex-mode.el -- Major mode for Salesforce Apex files
 
-;; Copyright (C) 2016 Magnus Nyberg
+;; Copyright (C) 2017 Magnus Nyberg
 
 ;; Author: Magnus Nyberg <magnus@nexter.se>
 ;; Keywords: languages, apex, force, sfdc, salesforce
