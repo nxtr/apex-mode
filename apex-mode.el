@@ -213,6 +213,157 @@ not apply to labels recognized by `c-label-kwds' and
 `c-opt-extra-label-key'."
   t nil)
 
+;;;; engine
+
+(defun apex-c-inside-bracelist-p (containing-sexp paren-state)
+  ;; return the buffer position of the beginning of the brace list
+  ;; statement if we're inside a brace list, otherwise return nil.
+  ;; CONTAINING-SEXP is the buffer pos of the innermost containing
+  ;; paren.  PAREN-STATE is the remainder of the state of enclosing
+  ;; braces
+  ;;
+  ;; N.B.: This algorithm can potentially get confused by cpp macros
+  ;; placed in inconvenient locations.  It's a trade-off we make for
+  ;; speed.
+  ;;
+  ;; This function might do hidden buffer changes.
+  (or
+   ;; This will pick up brace list declarations.
+   (save-excursion
+     (goto-char containing-sexp)
+     (c-backward-over-enum-header))
+   ;; this will pick up array/aggregate init lists, even if they are nested.
+   (save-excursion
+     (let ((class-key
+	    ;; Pike can have class definitions anywhere, so we must
+	    ;; check for the class key here.
+	    (and (c-major-mode-is 'pike-mode)
+		 c-decl-block-key))
+	   bufpos braceassignp lim next-containing macro-start)
+       (while (and (not bufpos)
+		   containing-sexp)
+	 (when paren-state
+	   (if (consp (car paren-state))
+	       (setq lim (cdr (car paren-state))
+		     paren-state (cdr paren-state))
+	     (setq lim (car paren-state)))
+	   (when paren-state
+	     (setq next-containing (car paren-state)
+		   paren-state (cdr paren-state))))
+	 (goto-char containing-sexp)
+	 (if (c-looking-at-inexpr-block next-containing next-containing)
+	     ;; We're in an in-expression block of some kind.  Do not
+	     ;; check nesting.  We deliberately set the limit to the
+	     ;; containing sexp, so that c-looking-at-inexpr-block
+	     ;; doesn't check for an identifier before it.
+	     (setq containing-sexp nil)
+	   ;; see if the open brace is preceded by = or [...] in
+	   ;; this statement, but watch out for operator=
+	   (setq braceassignp 'dontknow)
+	   (c-backward-token-2 1 t lim)
+	   ;; Checks to do only on the first sexp before the brace.
+	   (when (and c-opt-inexpr-brace-list-key
+		      (eq (char-after) ?\[))
+	     ;; In Java, an initialization brace list may follow
+	     ;; directly after "new Foo[]", so check for a "new"
+	     ;; earlier.
+	     (while (eq braceassignp 'dontknow)
+	       (setq braceassignp
+		     (cond ((/= (c-backward-token-2 1 t lim) 0) nil)
+			   ((looking-at c-opt-inexpr-brace-list-key) t)
+			   ((looking-at "\\sw\\|\\s_\\|[.[]")
+			    ;; Carry on looking if this is an
+			    ;; identifier (may contain "." in Java)
+			    ;; or another "[]" sexp.
+			    'dontknow)
+			   (t nil)))))
+	   ;; Checks to do on all sexps before the brace, up to the
+	   ;; beginning of the statement.
+	   (while (eq braceassignp 'dontknow)
+	     (cond ((eq (char-after) ?\;)
+		    (setq braceassignp nil))
+		   ((and class-key
+			 (looking-at class-key))
+		    (setq braceassignp nil))
+		   ((eq (char-after) ?=)
+		    ;; We've seen a =, but must check earlier tokens so
+		    ;; that it isn't something that should be ignored.
+		    (setq braceassignp 'maybe)
+		    (while (and (eq braceassignp 'maybe)
+				(zerop (c-backward-token-2 1 t lim)))
+		      (setq braceassignp
+			    (cond
+			     ;; Check for operator =
+			     ((and c-opt-op-identifier-prefix
+				   (looking-at c-opt-op-identifier-prefix))
+			      nil)
+			     ;; Check for `<opchar>= in Pike.
+			     ((and (c-major-mode-is 'pike-mode)
+				   (or (eq (char-after) ?`)
+				       ;; Special case for Pikes
+				       ;; `[]=, since '[' is not in
+				       ;; the punctuation class.
+				       (and (eq (char-after) ?\[)
+					    (eq (char-before) ?`))))
+			      nil)
+			     ((looking-at "\\s.") 'maybe)
+			     ;; make sure we're not in a C++ template
+			     ;; argument assignment
+			     ((and
+			       (c-major-mode-is 'c++-mode)
+			       (save-excursion
+				 (let ((here (point))
+				       (pos< (progn
+					       (skip-chars-backward "^<>")
+					       (point))))
+				   (and (eq (char-before) ?<)
+					(not (c-crosses-statement-barrier-p
+					      pos< here))
+					(not (c-in-literal))
+					))))
+			      nil)
+			     (t t))))))
+	     (if (and (eq braceassignp 'dontknow)
+		      (/= (c-backward-token-2 1 t lim) 0))
+		 (setq braceassignp nil)))
+	   (cond
+	    (braceassignp
+	     ;; We've hit the beginning of the aggregate list.
+	     (c-beginning-of-statement-1
+	      (c-most-enclosing-brace paren-state))
+	     (setq bufpos (point)))
+	    ((eq (char-after) ?\;)
+	     ;; Brace lists can't contain a semicolon, so we're done.
+	     (setq containing-sexp nil))
+	    ((and (setq macro-start (point))
+		  (c-forward-to-cpp-define-body)
+		  (eq (point) containing-sexp))
+	     ;; We've a macro whose expansion starts with the '{'.
+	     ;; Heuristically, if we have a ';' in it we've not got a
+	     ;; brace list, otherwise we have.
+	     (let ((macro-end (progn (c-end-of-macro) (point))))
+	       (goto-char containing-sexp)
+	       (forward-char)
+	       (if (and (c-syntactic-re-search-forward "[;,]" macro-end t t)
+			(eq (char-before) ?\;))
+		   (setq bufpos nil
+			 containing-sexp nil)
+		 (setq bufpos macro-start))))
+	    (t
+	     ;; Go up one level
+	     (setq containing-sexp next-containing
+		   lim nil
+		   next-containing nil)))))
+
+       bufpos))
+   ))
+
+(advice-add 'c-inside-bracelist-p :around
+            (lambda (cc-fun &rest args)
+              (if (eq major-mode 'apex-mode)
+                  (apply 'apex-c-inside-bracelist-p args)
+                (apply cc-fun args))))
+
 ;;;; fonts
 
 (defconst apex-font-lock-keywords-1
