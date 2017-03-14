@@ -222,6 +222,17 @@ not apply to labels recognized by `c-label-kwds' and
 
 ;;;; engine
 
+(defun apex-c-cheap-inside-bracelist-p (paren-state)
+  ;; Return the position of the L-brace if point is inside a brace list
+  ;; initialization of an array, etc.
+  nil)
+
+(advice-add 'c-cheap-inside-bracelist-p :around
+            (lambda (cc-fun &rest args)
+              (if (eq major-mode 'apex-mode)
+                  (apply 'apex-c-cheap-inside-bracelist-p args)
+                (apply cc-fun args))))
+
 (defun apex-c-inside-bracelist-p (containing-sexp paren-state)
   ;; return the buffer position of the beginning of the brace list
   ;; statement if we're inside a brace list, otherwise return nil.
