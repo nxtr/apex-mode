@@ -44,11 +44,11 @@ in identifiers.  nil in languages that don't have such things.
 
 Operators here should also have appropriate entries in `c-operators' -
 it's not taken care of by default."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-assignment-operators
   "List of all assignment operators."
-  t '("=" "*=" "/=" "+=" "-=" ">>=" "<<=" "&=" "^=" "|=" ">>>="))
+  apex '("=" "*=" "/=" "+=" "-=" ">>=" "<<=" "&=" "^=" "|=" ">>>="))
 
 (c-lang-defconst c-primitive-type-kwds
   "Primitive type keywords.  As opposed to the other keyword lists, the
@@ -63,7 +63,17 @@ will be handled.
 Do not try to modify this list for end user customizations; the
 `*-font-lock-extra-types' variable, where `*' is the mode prefix, is
 the appropriate place for that."
-  t '("after" "before" "void"))
+  apex '("after" "before" "void"))
+
+(c-lang-defconst c-type-prefix-kwds
+  "Keywords where the following name - if any - is a type name, and
+where the keyword together with the symbol works as a type in
+declarations.
+
+Note that an alternative if the second part doesn't hold is
+`c-type-list-kwds'.  Keywords on this list are typically also present
+on one of the `*-decl-kwds' lists."
+  apex '("on"))
 
 (c-lang-defconst c-class-decl-kwds
   "Keywords introducing declarations where the following block (if any)
@@ -77,7 +87,7 @@ will be handled.
 Note that presence on this list does not automatically treat the
 following identifier as a type; the keyword must also be present on
 `c-type-prefix-kwds' or `c-type-list-kwds' to accomplish that."
-  t '("class" "interface" "trigger"))
+  apex '("class" "interface" "trigger"))
 
 (c-lang-defconst c-typeless-decl-kwds
   "Keywords introducing declarations where the \(first) identifier
@@ -90,9 +100,9 @@ will be handled."
   ;; Default to `c-class-decl-kwds' and `c-brace-list-decl-kwds'
   ;; (since e.g. "Foo" is the identifier being defined in "class Foo
   ;; {...}").
-  t (append (c-lang-const c-class-decl-kwds)
-            (c-lang-const c-brace-list-decl-kwds)
-            '("get" "on" "set")))
+  apex (append (c-lang-const c-class-decl-kwds)
+               (c-lang-const c-brace-list-decl-kwds)
+               '("get" "set")))
 
 (c-lang-defconst c-modifier-kwds
   "Keywords that can prefix normal declarations of identifiers
@@ -104,15 +114,15 @@ If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
 `c-colon-type-list-kwds', `c-paren-nontype-kwds', `c-paren-type-kwds',
 `c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
 will be handled."
-  t '("abstract" "final" "global" "override" "private" "protected" "public"
-      "with sharing" "without sharing" "static" "testmethod" "transient"
-      "virtual" "webservice"))
+  apex '("abstract" "final" "global" "override" "private" "protected" "public"
+         "with sharing" "without sharing" "static" "testmethod" "transient"
+         "virtual" "webservice"))
 
 (c-lang-defconst c-postfix-decl-spec-kwds
   "Keywords introducing extra declaration specifiers in the region
 between the header and the body \(i.e. the \"K&R-region\") in
 declarations."
-  t '("extends" "implements"))
+  apex '("extends" "implements"))
 
 (c-lang-defconst c-type-list-kwds
   "Keywords that may be followed by a comma separated list of type
@@ -129,7 +139,7 @@ either.
 
 Note: Use `c-typeless-decl-kwds' for keywords followed by a function
 or variable identifier (that's being defined)."
-  t '("extends" "implements"))
+  apex '("extends" "implements"))
 
 (c-lang-defconst c-ref-list-kwds
   "Keywords that may be followed by a comma separated list of
@@ -140,44 +150,44 @@ be mutually exclusive with `c-type-list-kwds'.
 
 Note: Use `c-typeless-decl-kwds' for keywords followed by a function
 or variable identifier (that's being defined)."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-block-stmt-1-2-kwds
   "Statement keywords optionally followed by a paren sexp.
 Keywords here should also be in `c-block-stmt-1-kwds'."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-block-stmt-2-kwds
   "Statement keywords followed by a paren sexp and then by a substatement."
-  t '("for" "if" "while" "catch"))
+  apex '("for" "if" "while" "catch"))
 
 (c-lang-defconst c-simple-stmt-kwds
   "Statement keywords followed by an expression or nothing."
-  t '("break" "continue" "delete" "insert" "merge" "return" "throw" "undelete"
-      "update" "upsert"))
+  apex '("break" "continue" "delete" "insert" "merge" "return" "throw" "undelete"
+         "update" "upsert"))
 
 (c-lang-defconst c-case-kwds
   "The keyword(s) which introduce a \"case\" like construct.
 This construct is \"<keyword> <expression> :\"."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-label-kwds
   "Keywords introducing colon terminated labels in blocks."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-before-label-kwds
   "Keywords that might be followed by a label identifier."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-inexpr-class-kwds
   "Keywords that can start classes inside expressions."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-inexpr-brace-list-kwds
   "Keywords that can start brace list blocks inside expressions.
 Note that Java specific rules are currently applied to tell this from
 `c-inexpr-class-kwds'."
-  t '("new"))
+  apex '("new"))
 
 (c-lang-defconst c-block-prefix-disallowed-chars
   "List of syntactically relevant characters that never can occur before
@@ -198,8 +208,8 @@ in which to look for a construct like \"class\", \"enum\",
 \"namespace\" or whatever.  That skipping should be as tight as
 possible for good performance."
   ;; Allow ',' for multiple inherits.
-  t (c--set-difference (c-lang-const c-block-prefix-disallowed-chars)
-                       '(?,)))
+  apex (c--set-difference (c-lang-const c-block-prefix-disallowed-chars)
+                          '(?,)))
 
 (c-lang-defconst c-recognize-typeless-decls
   "Non-nil means function declarations without return type should be
@@ -207,18 +217,18 @@ recognized.  That can introduce an ambiguity with parenthesized macro
 calls before a brace block.  This setting does not affect declarations
 that are preceded by a declaration starting keyword, so
 e.g. `c-typeless-decl-kwds' may still be used when it's set to nil."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-enums-contain-decls
   "Non-nil means that an enum structure can contain declarations."
-  t nil)
+  apex nil)
 
 (c-lang-defconst c-recognize-colon-labels
   "Non-nil if generic labels ending with \":\" should be recognized.
 That includes labels in code and access keys in classes.  This does
 not apply to labels recognized by `c-label-kwds' and
 `c-opt-extra-label-key'."
-  t nil)
+  apex nil)
 
 ;;;; engine
 
