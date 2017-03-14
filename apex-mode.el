@@ -4,6 +4,9 @@
 
 ;; Author: Magnus Nyberg <magnus@nexter.se>
 ;; Keywords: languages, apex, force, sfdc, salesforce
+;; Homepage: https://github.com/nxtr/apex-mode
+
+;; This file is not part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -17,6 +20,10 @@
 
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; This is a major mode for editing Apex code.
 
 ;;; Code:
 
@@ -335,6 +342,7 @@ not apply to labels recognized by `c-label-kwds' and
 ;;;###autoload
 (define-derived-mode apex-mode java-mode "Apex"
   "Major mode for editing Apex code.
+
 Key bindings:
 \\{apex-mode-map}"
   (c-initialize-cc-mode t)
