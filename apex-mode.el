@@ -118,6 +118,18 @@ will be handled."
          "with sharing" "without sharing" "static" "testmethod" "transient"
          "virtual" "webservice"))
 
+(c-lang-defconst c-other-decl-kwds
+  "Keywords that can start or prefix any declaration level construct,
+besides those on `c-class-decl-kwds', `c-brace-list-decl-kwds',
+`c-other-block-decl-kwds', `c-typedef-decl-kwds',
+`c-typeless-decl-kwds' and `c-modifier-kwds'.
+
+If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
+`c-colon-type-list-kwds', `c-paren-nontype-kwds', `c-paren-type-kwds',
+`c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
+will be handled."
+  apex nil)
+
 (c-lang-defconst c-postfix-decl-spec-kwds
   "Keywords introducing extra declaration specifiers in the region
 between the header and the body \(i.e. the \"K&R-region\") in
