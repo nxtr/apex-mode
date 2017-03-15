@@ -36,6 +36,21 @@
 (eval-and-compile
   (c-add-language 'apex-mode 'java-mode))
 
+;;;; align
+
+(defun apex-c-block-in-arglist-dwim (_arglist-start)
+  ;; This function implements the DWIM to avoid far indentation of
+  ;; brace block constructs in arguments in `c-lineup-arglist' etc.
+  ;; Return non-nil if a brace block construct is detected within the
+  ;; arglist starting at ARGLIST-START.
+  nil)
+
+(advice-add 'c-block-in-arglist-dwim :around
+            (lambda (cc-fun &rest args)
+              (if (eq major-mode 'apex-mode)
+                  (apply 'apex-c-block-in-arglist-dwim args)
+                (apply cc-fun args))))
+
 ;;;; langs
 
 (c-lang-defconst c-identifier-syntax-modifications
