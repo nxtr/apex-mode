@@ -370,6 +370,11 @@ not apply to labels recognized by `c-label-kwds' and
 (defvar apex-font-lock-keywords apex-font-lock-keywords-3
   "Default expressions to highlight in Apex mode.")
 
+;;;; style
+
+(c-add-style "apex" '("java" (c-offsets-alist . ((arglist-intro . *)
+                                                 (statement-cont . *)))))
+
 ;;;; mode
 
 ;;;###autoload
@@ -380,6 +385,10 @@ Key bindings:
 \\{apex-mode-map}"
   (c-initialize-cc-mode t)
   (c-init-language-vars apex-mode)
+  (unless (or c-file-style
+              (stringp c-default-style)
+              (assq 'apex-mode c-default-style))
+    (c-set-style "apex"))
   (c-common-init 'apex-mode)
   (setq c-buffer-is-cc-mode 'java-mode))
 
