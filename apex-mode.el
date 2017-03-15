@@ -353,6 +353,14 @@ not apply to labels recognized by `c-label-kwds' and
                   (apply 'apex-c-inside-bracelist-p args)
                 (apply cc-fun args))))
 
+;;;; customization
+
+(defcustom apex-mode-keywords-case-fold nil
+  "You can specify if keyword highlightning should be case-insensitive."
+  :type '(choice (const :tag "Case-sensitive" nil)
+                 (const :tag "Case-insensitive" t))
+  :group 'apex-mode)
+
 ;;;; fonts
 
 (defconst apex-font-lock-keywords-1
@@ -390,6 +398,7 @@ Key bindings:
               (assq 'apex-mode c-default-style))
     (c-set-style "apex"))
   (c-common-init 'apex-mode)
+  (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (setq c-buffer-is-cc-mode 'java-mode))
 
 ;;;###autoload
