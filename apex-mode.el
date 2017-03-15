@@ -290,6 +290,18 @@ recognized."
                  (const :tag "Case-insensitive" t))
   :group 'apex-mode)
 
+(defcustom apex-font-lock-extra-types
+  (list (concat "[" c-upper "]\\sw*[" c-lower "]\\sw*"))
+  (c-make-font-lock-extra-types-blurb
+   "Apex" "apex-mode"
+   (concat
+    "For example, a value of "
+    "(\"[" c-upper "]\\\\sw*[" c-lower "]\\\\sw*\") means\n"
+    "capitalized words are treated as type names (the requirement for a\n"
+    "lower case char is to avoid recognizing all-caps constant names)."))
+  :type 'c-extra-types-widget
+  :group 'apex-mode)
+
 ;;;; fonts
 
 (defconst apex-font-lock-keywords-1
