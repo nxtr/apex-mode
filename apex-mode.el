@@ -404,21 +404,47 @@ not apply to labels recognized by `c-label-kwds' and
 (c-add-style "apex" '("java" (c-offsets-alist . ((arglist-intro . *)
                                                  (statement-cont . *)))))
 
+;;;; syntax-table
+
+(defvar apex-mode-syntax-table nil
+  "Syntax table used in apex-mode buffers.")
+(unless apex-mode-syntax-table
+  (setq apex-mode-syntax-table
+        (funcall (c-lang-const c-make-mode-syntax-table apex)))
+  (modify-syntax-entry ?_ "w" apex-mode-syntax-table))
+
+;;;; abbrev-table
+
+(defvar apex-mode-abbrev-table nil
+  "Abbreviation table used in apex-mode buffers.")
+(unless apex-mode-abbrev-table
+  (setq apex-mode-abbrev-table
+        (copy-abbrev-table java-mode-abbrev-table)))
+
+;;;; map
+
+(defvar apex-mode-map (c-make-inherited-keymap)
+  "Keymap used in apex-mode buffers.")
+
 ;;;; mode
 
 ;;;###autoload
-(define-derived-mode apex-mode java-mode "Apex"
+(define-derived-mode apex-mode prog-mode "Apex"
   "Major mode for editing Apex code.
 
 Key bindings:
 \\{apex-mode-map}"
   (c-initialize-cc-mode t)
+  (set-syntax-table apex-mode-syntax-table)
+  (setq local-abbrev-table apex-mode-abbrev-table
+        abbrev-mode t)
+  (use-local-map apex-mode-map)
   (c-init-language-vars apex-mode)
+  (c-common-init 'apex-mode)
   (unless (or c-file-style
               (stringp c-default-style)
               (assq 'apex-mode c-default-style))
     (c-set-style "apex"))
-  (c-common-init 'apex-mode)
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (setq c-buffer-is-cc-mode 'java-mode))
 
