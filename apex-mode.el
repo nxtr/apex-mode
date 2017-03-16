@@ -426,6 +426,11 @@ not apply to labels recognized by `c-label-kwds' and
 (defvar apex-mode-map (c-make-inherited-keymap)
   "Keymap used in apex-mode buffers.")
 
+;;;; menu
+
+(easy-menu-define c-apex-menu apex-mode-map "Apex Mode Commands"
+  (cons "Apex" (c-lang-const c-mode-menu apex)))
+
 ;;;; mode
 
 ;;;###autoload
@@ -445,6 +450,7 @@ Key bindings:
               (stringp c-default-style)
               (assq 'apex-mode c-default-style))
     (c-set-style "apex"))
+  (easy-menu-add c-apex-menu)
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (setq c-buffer-is-cc-mode 'java-mode))
 
