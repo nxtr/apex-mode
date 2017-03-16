@@ -38,6 +38,27 @@
 
 ;;;; langs
 
+(c-lang-defconst c-identifier-syntax-modifications
+  "A list that describes the modifications that should be done to the
+mode syntax table to get a syntax table that matches all identifiers
+and keywords as words.
+
+The list is just like the one used in `font-lock-defaults': Each
+element is a cons where the car is the character to modify and the cdr
+the new syntax, as accepted by `modify-syntax-entry'."
+  ;; The $ character is not allowed in most languages (one exception
+  ;; is Java which allows it for legacy reasons) but we still classify
+  ;; it as an identifier character since it's often used in various
+  ;; machine generated identifiers.
+  apex '((?@ ."w") (?_ . "w")))
+
+(c-lang-defconst c-symbol-chars
+  "Set of characters that can be part of a symbol.
+This is of the form that fits inside [ ] in a regexp."
+  ;; Pike note: With the backquote identifiers this would include most
+  ;; operator chars too, but they are handled with other means instead.
+  apex (concat c-alnum "_"))
+
 (c-lang-defconst c-after-id-concat-ops
   "Operators that can occur after a binary operator on `c-identifier-ops'
 in identifiers.  nil in languages that don't have such things.
