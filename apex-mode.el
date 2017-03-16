@@ -431,6 +431,12 @@ not apply to labels recognized by `c-label-kwds' and
 (easy-menu-define c-apex-menu apex-mode-map "Apex Mode Commands"
   (cons "Apex" (c-lang-const c-mode-menu apex)))
 
+;;;; imenu
+
+(defconst cc-imenu-apex-generic-expression
+  cc-imenu-java-generic-expression
+  "Imenu generic expression for Apex mode.  See `imenu-generic-expression'.")
+
 ;;;; mode
 
 ;;;###autoload
@@ -451,6 +457,7 @@ Key bindings:
               (assq 'apex-mode c-default-style))
     (c-set-style "apex"))
   (easy-menu-add c-apex-menu)
+  (cc-imenu-init cc-imenu-apex-generic-expression)
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (setq c-buffer-is-cc-mode 'java-mode))
 
