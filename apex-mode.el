@@ -437,6 +437,79 @@ not apply to labels recognized by `c-label-kwds' and
   cc-imenu-java-generic-expression
   "Imenu generic expression for Apex mode.  See `imenu-generic-expression'.")
 
+;;;; soql and sosl special indent
+
+(defun apex-mode--soql-select-align-clauses-regexp ()
+  (eval-when-compile
+    (regexp-opt
+     '("FROM" "USING" "WHERE" "WITH" "GROUP" "ORDER" "LIMIT" "OFFSET" "FOR")
+     'words)))
+
+(defun apex-mode--sosl-find-align-clauses-regexp ()
+  (eval-when-compile
+    (regexp-opt '("IN" "RETURNING" "WITH" "LIMIT" "UPDATE") 'words)))
+
+(defun apex-mode--soql-and-sosl-stmt-regexp ()
+  (eval-when-compile
+    (regexp-opt '("SELECT" "FIND") 'words)))
+
+(defun apex-mode--soql-or-sosl-bracket-stmt-match (pos)
+  (when (member (char-after pos) '(?\[ ?\())
+    (save-excursion
+      (goto-char (1+ pos))
+      (forward-comment (point-max))
+      (apex-mode--soql-or-sosl-stmt-match (point)))))
+
+(defun apex-mode--soql-or-sosl-stmt-match (pos)
+  (save-excursion
+    (goto-char pos)
+    (when (looking-at (apex-mode--soql-and-sosl-stmt-regexp))
+      (intern (match-string-no-properties 0)))))
+
+(defvar c-syntactic-context)
+
+(defun apex-mode--soql-and-sosl-indent-hook ()
+  (let* ((context (nreverse c-syntactic-context)) ; closest context
+         (langelem (or (assq 'arglist-intro context)
+                       (assq 'arglist-cont-nonempty context)
+                       (assq 'arglist-cont context))))
+    (when langelem
+      (save-excursion
+        (let ((sym (c-langelem-sym langelem))
+              (anchor-pos (c-langelem-pos langelem))
+              (bracket-pos (c-langelem-2nd-pos langelem))
+              (org-indent (progn (back-to-indentation) (current-column)))
+              new-indent match)
+          (setq new-indent org-indent)
+          (cond
+           ;; var = [
+           ;;     SELECT arg1,  <- c-basic-offset
+           ((and (eq sym 'arglist-intro)
+                 (apex-mode--soql-or-sosl-bracket-stmt-match bracket-pos))
+            (setq new-indent (+ (c-langelem-col langelem t) c-basic-offset)))
+           ;; [SELECT arg1,
+           ;;      arg2         <- c-basic-offset
+           ;;  FROM arg3
+           ((and (eq sym 'arglist-cont-nonempty)
+                 (setq match (apex-mode--soql-or-sosl-bracket-stmt-match bracket-pos)))
+            (unless (or (and (eq match 'SELECT)
+                             (looking-at-p (apex-mode--soql-select-align-clauses-regexp)))
+                        (and (eq match 'FIND)
+                             (looking-at-p (apex-mode--soql-find-align-clauses-regexp))))
+              (setq new-indent (+ (current-column) c-basic-offset))))
+           ;; var = [
+           ;;     SELECT arg1,
+           ;;         arg2      <- c-basic-offset
+           ;;     FROM arg3
+           ((and (eq sym 'arglist-cont)
+                 (setq match (apex-mode--soql-or-sosl-stmt-match anchor-pos)))
+            (unless (or (and (eq match 'SELECT)
+                             (looking-at-p (apex-mode--soql-select-align-clauses-regexp)))
+                        (and (eq match 'FIND)
+                             (looking-at-p (apex-mode--soql-find-align-clauses-regexp))))
+              (setq new-indent (+ (current-column) c-basic-offset)))))
+          (c-shift-line-indentation (- new-indent org-indent)))))))
+
 ;;;; mode
 
 ;;;###autoload
@@ -459,7 +532,8 @@ Key bindings:
   (easy-menu-add c-apex-menu)
   (cc-imenu-init cc-imenu-apex-generic-expression)
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
-  (setq c-buffer-is-cc-mode 'java-mode))
+  (setq c-buffer-is-cc-mode 'java-mode)
+  (add-hook 'c-special-indent-hook 'apex-mode--soql-and-sosl-indent-hook))
 
 ;;;###autoload
 (setq auto-mode-alist
