@@ -41,30 +41,17 @@
 (c-lang-defconst c-identifier-syntax-modifications
   "A list that describes the modifications that should be done to the
 mode syntax table to get a syntax table that matches all identifiers
-and keywords as words.
-
-The list is just like the one used in `font-lock-defaults': Each
-element is a cons where the car is the character to modify and the cdr
-the new syntax, as accepted by `modify-syntax-entry'."
-  ;; The $ character is not allowed in most languages (one exception
-  ;; is Java which allows it for legacy reasons) but we still classify
-  ;; it as an identifier character since it's often used in various
-  ;; machine generated identifiers.
+and keywords as words."
   apex '((?@ ."w") (?_ . "w")))
 
 (c-lang-defconst c-symbol-chars
   "Set of characters that can be part of a symbol.
 This is of the form that fits inside [ ] in a regexp."
-  ;; Pike note: With the backquote identifiers this would include most
-  ;; operator chars too, but they are handled with other means instead.
   apex (concat c-alnum "_"))
 
 (c-lang-defconst c-after-id-concat-ops
   "Operators that can occur after a binary operator on `c-identifier-ops'
-in identifiers.  nil in languages that don't have such things.
-
-Operators here should also have appropriate entries in `c-operators' -
-it's not taken care of by default."
+in identifiers.  nil in languages that don't have such things."
   apex nil)
 
 (c-lang-defconst c-assignment-operators
@@ -74,53 +61,23 @@ it's not taken care of by default."
 (c-lang-defconst c-primitive-type-kwds
   "Primitive type keywords.  As opposed to the other keyword lists, the
 keywords listed here are fontified with the type face instead of the
-keyword face.
-
-If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
-`c-colon-type-list-kwds', `c-paren-nontype-kwds', `c-paren-type-kwds',
-`c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
-will be handled.
-
-Do not try to modify this list for end user customizations; the
-`*-font-lock-extra-types' variable, where `*' is the mode prefix, is
-the appropriate place for that."
+keyword face."
   apex '("after" "before" "void"))
 
 (c-lang-defconst c-type-prefix-kwds
   "Keywords where the following name - if any - is a type name, and
 where the keyword together with the symbol works as a type in
-declarations.
-
-Note that an alternative if the second part doesn't hold is
-`c-type-list-kwds'.  Keywords on this list are typically also present
-on one of the `*-decl-kwds' lists."
+declarations."
   apex '("on"))
 
 (c-lang-defconst c-class-decl-kwds
   "Keywords introducing declarations where the following block (if any)
-contains another declaration level that should be considered a class.
-
-If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
-`c-colon-type-list-kwds', `c-paren-nontype-kwds', `c-paren-type-kwds',
-`c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
-will be handled.
-
-Note that presence on this list does not automatically treat the
-following identifier as a type; the keyword must also be present on
-`c-type-prefix-kwds' or `c-type-list-kwds' to accomplish that."
+contains another declaration level that should be considered a class."
   apex '("class" "interface" "trigger"))
 
 (c-lang-defconst c-typeless-decl-kwds
   "Keywords introducing declarations where the \(first) identifier
-\(declarator) follows directly after the keyword, without any type.
-
-If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
-`c-colon-type-list-kwds', `c-paren-nontype-kwds', `c-paren-type-kwds',
-`c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
-will be handled."
-  ;; Default to `c-class-decl-kwds' and `c-brace-list-decl-kwds'
-  ;; (since e.g. "Foo" is the identifier being defined in "class Foo
-  ;; {...}").
+\(declarator) follows directly after the keyword, without any type."
   apex (append (c-lang-const c-class-decl-kwds)
                (c-lang-const c-brace-list-decl-kwds)
                '("get" "set")))
@@ -129,12 +86,7 @@ will be handled."
   "Keywords that can prefix normal declarations of identifiers
 \(and typically act as flags).  Things like argument declarations
 inside function headers are also considered declarations in this
-sense.
-
-If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
-`c-colon-type-list-kwds', `c-paren-nontype-kwds', `c-paren-type-kwds',
-`c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
-will be handled."
+sense."
   apex '("abstract" "final" "global" "override" "private" "protected" "public"
          "with sharing" "without sharing" "static" "testmethod" "transient"
          "virtual" "webservice"))
@@ -143,12 +95,7 @@ will be handled."
   "Keywords that can start or prefix any declaration level construct,
 besides those on `c-class-decl-kwds', `c-brace-list-decl-kwds',
 `c-other-block-decl-kwds', `c-typedef-decl-kwds',
-`c-typeless-decl-kwds' and `c-modifier-kwds'.
-
-If any of these also are on `c-type-list-kwds', `c-ref-list-kwds',
-`c-colon-type-list-kwds', `c-paren-nontype-kwds', `c-paren-type-kwds',
-`c-<>-type-kwds', or `c-<>-arglist-kwds' then the associated clauses
-will be handled."
+`c-typeless-decl-kwds' and `c-modifier-kwds'."
   apex nil)
 
 (c-lang-defconst c-postfix-decl-spec-kwds
@@ -161,17 +108,7 @@ declarations."
   "Keywords that may be followed by a comma separated list of type
 identifiers, where each optionally can be prefixed by keywords.  (Can
 also be used for the special case when the list can contain only one
-element.)
-
-Assumed to be mutually exclusive with `c-ref-list-kwds'.  There's no
-reason to put keywords on this list if they are on `c-type-prefix-kwds'.
-There's also no reason to add keywords that prefixes a normal
-declaration consisting of a type followed by a declarator (list), so
-the keywords on `c-modifier-kwds' should normally not be listed here
-either.
-
-Note: Use `c-typeless-decl-kwds' for keywords followed by a function
-or variable identifier (that's being defined)."
+element.)"
   apex '("extends" "implements"))
 
 (c-lang-defconst c-ref-list-kwds
@@ -179,10 +116,7 @@ or variable identifier (that's being defined)."
 reference (i.e. namespace/scope/module) identifiers, where each
 optionally can be prefixed by keywords.  (Can also be used for the
 special case when the list can contain only one element.)  Assumed to
-be mutually exclusive with `c-type-list-kwds'.
-
-Note: Use `c-typeless-decl-kwds' for keywords followed by a function
-or variable identifier (that's being defined)."
+be mutually exclusive with `c-type-list-kwds'."
   apex nil)
 
 (c-lang-defconst c-block-stmt-1-2-kwds
@@ -224,32 +158,13 @@ Note that Java specific rules are currently applied to tell this from
 
 (c-lang-defconst c-block-prefix-disallowed-chars
   "List of syntactically relevant characters that never can occur before
-the open brace in any construct that contains a brace block, e.g. in
-the \"class Foo: public Bar\" part of:
-
-    class Foo: public Bar {int x();} a, *b;
-
-If parens can occur, the chars inside those aren't filtered with this
-list.
-
-`<' and `>' should be disallowed even if angle bracket arglists can
-occur.  That since the search function needs to stop at them anyway to
-ensure they are given paren syntax.
-
-This is used to skip backward from the open brace to find the region
-in which to look for a construct like \"class\", \"enum\",
-\"namespace\" or whatever.  That skipping should be as tight as
-possible for good performance."
-  ;; Allow ',' for multiple inherits.
+the open brace in any construct that contains a brace block."
   apex (c--set-difference (c-lang-const c-block-prefix-disallowed-chars)
                           '(?,)))
 
 (c-lang-defconst c-recognize-typeless-decls
   "Non-nil means function declarations without return type should be
-recognized.  That can introduce an ambiguity with parenthesized macro
-calls before a brace block.  This setting does not affect declarations
-that are preceded by a declaration starting keyword, so
-e.g. `c-typeless-decl-kwds' may still be used when it's set to nil."
+recognized."
   apex nil)
 
 (c-lang-defconst c-enums-contain-decls
@@ -257,10 +172,7 @@ e.g. `c-typeless-decl-kwds' may still be used when it's set to nil."
   apex nil)
 
 (c-lang-defconst c-recognize-colon-labels
-  "Non-nil if generic labels ending with \":\" should be recognized.
-That includes labels in code and access keys in classes.  This does
-not apply to labels recognized by `c-label-kwds' and
-`c-opt-extra-label-key'."
+  "Non-nil if generic labels ending with \":\" should be recognized."
   apex nil)
 
 ;;;; engine
@@ -282,10 +194,6 @@ not apply to labels recognized by `c-label-kwds' and
   ;; CONTAINING-SEXP is the buffer pos of the innermost containing
   ;; paren.  PAREN-STATE is the remainder of the state of enclosing
   ;; braces
-  ;;
-  ;; N.B.: This algorithm can potentially get confused by cpp macros
-  ;; placed in inconvenient locations.  It's a trade-off we make for
-  ;; speed.
   ;;
   ;; This function might do hidden buffer changes.
   (or
