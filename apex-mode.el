@@ -307,6 +307,45 @@ recognized."
 (defvar apex-font-lock-keywords apex-font-lock-keywords-3
   "Default expressions to highlight in Apex mode.")
 
+;;;; font-lock soql and sosl
+
+(defvar apex-mode--soql-and-sosl-kwds-regexp
+  (eval-when-compile
+    (regexp-opt
+     '("SELECT" "TYPEOF" "WHEN" "THEN" "ELSE" "END" "FROM" "USING"
+       "SCOPE" "WHERE" "WITH" "DATA" "CATEGORY" "AT" "ABOVE" "BELOW"
+       "ABOVE_OR_BELOW" "GROUP" "BY" "ROLLUP" "CUBE" "GROUPING" "HAVING"
+       "ORDER" "ASC" "DESC" "NULLS" "FIRST" "LAST" "LIMIT" "OFFSET"
+       "FOR" "VIEW" "REFERENCE" "UPDATE" "TRACKING" "VIEWSTAT" "TRUE"
+       "FALSE" "LIKE" "IN" "NOT" "AND" "OR" "INCLUDES" "EXCLUDES"
+       "AVG" "COUNT" "COUNT_DISTINCT" "MIN" "MAX" "SUM" "DISTANCE"
+       "GEOLOCATION" "FORMAT" "CALENDAR_MONTH" "CALENDAR_QUARTER"
+       "CALENDAR_YEAR" "DAY_IN_MONTH" "DAY_IN_WEEK" "DAY_IN_YEAR"
+       "DAY_ONLY" "FISCAL_MONTH" "FISCAL_QUARTER" "FISCAL_YEAR"
+       "HOUR_IN_DAY" "WEEK_IN_MONTH" "WEEK_IN_YEAR" "YESTERDAY" "TODAY"
+       "TOMORROW" "LAST_WEEK" "THIS_WEEK" "NEXT_WEEK" "LAST_MONTH"
+       "THIS_MONTH" "NEXT_MONTH" "LAST_90_DAYS" "NEXT_90_DAYS"
+       "LAST_N_DAYS" "NEXT_N_DAYS" "LAST_N_WEEKS" "NEXT_N_WEEKS"
+       "LAST_N_MONTHS" "NEXT_N_MONTHS" "THIS_QUARTER" "LAST_QUARTER"
+       "NEXT_QUARTER" "LAST_N_QUARTERS" "NEXT_N_QUARTERS" "THIS_YEAR"
+       "NEXT_YEAR" "LAST_YEAR" "LAST_N_YEARS" "NEXT_N_YEARS"
+       "THIS_FISCAL_QUARTER" "LAST_FISCAL_QUARTER" "NEXT_FISCAL_QUARTER"
+       "LAST_N_FISCAL_QUARTERS" "NEXT_N_FISCAL_QUARTERS" "THIS_FISCAL_YEAR"
+       "LAST_FISCAL_YEAR" "NEXT_FISCAL_YEAR" "LAST_N_FISCAL_YEARS"
+       "NEXT_N_FISCAL_YEARS" "FIND" "RETURNING" "SNIPPET"
+       "NETWORK" "HIGHLIGHT" "METADATA" "ALL" "FIELDS" "EMAIL" "NAME"
+       "PHONE" "SIDEBAR")
+     'words)))
+
+(defun apex-mode--soql-or-sosl-font-lock-matcher (limit)
+  "Search for soql or sosl keywords not in comments."
+  (let (res)
+    (while
+        (and (setq res (re-search-forward apex-mode--soql-and-sosl-kwds-regexp
+                                          limit t))
+             (eql (syntax-ppss-context (syntax-ppss)) 'comment)))
+    res))
+
 ;;;; style
 
 (c-add-style "apex" '("java" (c-offsets-alist . ((arglist-intro . *)
@@ -442,6 +481,16 @@ Key bindings:
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (setq c-buffer-is-cc-mode 'java-mode)
   (add-hook 'c-special-indent-hook 'apex-mode--soql-and-sosl-indent-hook))
+
+;;;; hooks
+
+(defun apex-mode--font-lock-hook ()
+  (font-lock-add-keywords
+   nil
+   `((apex-mode--soql-or-sosl-font-lock-matcher 0 font-lock-keyword-face prepend))
+   'append ))
+
+(add-hook 'apex-mode-hook 'apex-mode--font-lock-hook)
 
 ;;;###autoload
 (setq auto-mode-alist
