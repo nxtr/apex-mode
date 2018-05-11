@@ -1,4 +1,4 @@
-;;; apex-mode.el -- Major mode for Salesforce Apex files
+;;; apex-mode.el --- Salesforce Apex Major Mode   -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2017 Magnus Nyberg
 
@@ -192,7 +192,7 @@ recognized."
 
 ;;;; engine
 
-(defun apex-c-cheap-inside-bracelist-p (paren-state)
+(defun apex-c-cheap-inside-bracelist-p (_paren-state)
   ;; Return the position of the L-brace if point is inside a brace list
   ;; initialization of an array, etc.
   nil)
@@ -218,7 +218,7 @@ recognized."
      (c-backward-over-enum-header))
    ;; this will pick up array/aggregate init lists, even if they are nested.
    (save-excursion
-     (let (bufpos braceassignp lim next-containing macro-start)
+     (let (bufpos braceassignp lim next-containing _macro-start)
        (while (and (not bufpos)
 		   containing-sexp)
 	 (when paren-state
