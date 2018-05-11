@@ -1,6 +1,6 @@
 ;;; apex-mode.el --- Salesforce Apex Major Mode   -*- lexical-binding: t -*-
 
-;; Copyright (C) 2017 Magnus Nyberg
+;; Copyright (C) 2011-2018 Magnus Nyberg
 
 ;; Author: Magnus Nyberg <magnus@nexter.se>
 ;; Keywords: languages, apex, force, sfdc, salesforce
