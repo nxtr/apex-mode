@@ -40,7 +40,7 @@
   "You can specify if keyword highlightning should be case-insensitive."
   :type '(choice (const :tag "Case-sensitive" nil)
                  (const :tag "Case-insensitive" t))
-  :group 'apex-mode)
+  :group 'c)
 
 (defcustom apex-font-lock-extra-types
   (list (concat "[" c-upper "]\\sw*[" c-lower "]\\sw*"))
@@ -52,7 +52,12 @@
     "capitalized words are treated as type names (the requirement for a\n"
     "lower case char is to avoid recognizing all-caps constant names)."))
   :type 'c-extra-types-widget
-  :group 'apex-mode)
+  :group 'c)
+
+(defcustom apex-mode-hook nil
+  "Hook called by `apex-mode'."
+  :type 'hook
+  :group 'c)
 
 ;;;; fonts
 
