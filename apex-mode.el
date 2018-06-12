@@ -32,7 +32,13 @@
 
 (eval-and-compile
   (require 'apex-mode-cc-mode)
+  (require 'cc-defs)
+  (require 'cc-langs)
   (c-add-language 'apex-mode 'java-mode))
+
+(require 'cc-engine)
+(require 'cc-mode)
+(require 'cc-vars)
 
 ;;;; customization
 
@@ -246,7 +252,8 @@ Key bindings:
               (assq 'apex-mode c-default-style))
     (c-set-style "apex"))
   (easy-menu-add c-apex-menu)
-  (cc-imenu-init cc-imenu-apex-generic-expression)
+  (progn (require 'cc-menus)
+         (cc-imenu-init cc-imenu-apex-generic-expression))
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (setq c-buffer-is-cc-mode 'java-mode)
   (add-hook 'c-special-indent-hook 'apex-mode--soql-and-sosl-indent-hook))
