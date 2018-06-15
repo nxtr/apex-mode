@@ -204,11 +204,6 @@
               new-indent match)
           (setq new-indent org-indent)
           (cond
-           ;; var = [
-           ;;     SELECT arg1,  <- c-basic-offset
-           ((and (eq sym 'arglist-intro)
-                 (apex-mode--soql-or-sosl-bracket-stmt-match bracket-pos))
-            (setq new-indent (+ (c-langelem-col langelem t) c-basic-offset)))
            ;; [SELECT arg1,
            ;;      arg2         <- c-basic-offset
            ;;  FROM arg3
