@@ -186,7 +186,7 @@
   (save-excursion
     (goto-char pos)
     (when (looking-at (apex-mode--soql-and-sosl-stmt-regexp))
-      (intern (match-string-no-properties 0)))))
+      (intern (upcase (match-string-no-properties 0))))))
 
 (defvar c-syntactic-context)
 
