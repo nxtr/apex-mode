@@ -175,57 +175,59 @@
   (eval-when-compile
     (regexp-opt '("SELECT" "FIND") 'words)))
 
-(defun apex-mode--soql-or-sosl-bracket-stmt-match (pos)
+(defun apex-mode--soql-or-sosl-bracket-stmt-match (pos &rest _)
   (when (member (char-after pos) '(?\[ ?\())
     (save-excursion
       (goto-char (1+ pos))
       (forward-comment (point-max))
       (apex-mode--soql-or-sosl-stmt-match (point)))))
 
-(defun apex-mode--soql-or-sosl-stmt-match (pos)
+(defun apex-mode--soql-or-sosl-stmt-match (pos &rest _)
   (save-excursion
     (goto-char pos)
     (when (looking-at (apex-mode--soql-and-sosl-stmt-regexp))
       (intern (upcase (match-string-no-properties 0))))))
 
+(defun apex-mode--get-soql-and-sosl-stmt-indentation (statement)
+  (+ (current-column)
+     (pcase statement
+       ((and 'SELECT
+             (guard
+              (not (looking-at-p (apex-mode--soql-select-align-clauses-regexp)))))
+        (c-calc-offset '(statement-cont)))
+       ((and 'FIND
+             (guard
+              (not (looking-at-p (apex--soql-find-align-clauses-regexp)))))
+        c-basic-offset)
+       (_ 0))))
+
+(defun apex-mode--get-soql-and-sosl-indentation (langelem)
+  (pcase (c-langelem-sym langelem)
+    ((and 'arglist-cont-nonempty
+          (app (apex-mode--soql-or-sosl-bracket-stmt-match
+                (c-langelem-2nd-pos langelem))
+               statement)
+          (guard statement))
+     (apex-mode--get-soql-and-sosl-stmt-indentation statement))
+    ((and 'arglist-cont
+          (app (apex-mode--soql-or-sosl-stmt-match
+                (c-langelem-pos langelem))
+               statement)
+          (guard statement))
+     (apex-mode--get-soql-and-sosl-stmt-indentation statement))
+    (_ (current-column))))
+
 (defvar c-syntactic-context)
 
 (defun apex-mode--soql-and-sosl-indent-hook ()
-  (let* ((context (nreverse c-syntactic-context)) ; closest context
-         (langelem (or (assq 'arglist-intro context)
-                       (assq 'arglist-cont-nonempty context)
-                       (assq 'arglist-cont context))))
-    (when langelem
-      (save-excursion
-        (let ((sym (c-langelem-sym langelem))
-              (anchor-pos (c-langelem-pos langelem))
-              (bracket-pos (c-langelem-2nd-pos langelem))
-              (org-indent (progn (back-to-indentation) (current-column)))
-              new-indent match)
-          (setq new-indent org-indent)
-          (cond
-           ;; [SELECT arg1,
-           ;;      arg2         <- c-basic-offset
-           ;;  FROM arg3
-           ((and (eq sym 'arglist-cont-nonempty)
-                 (setq match (apex-mode--soql-or-sosl-bracket-stmt-match bracket-pos)))
-            (unless (or (and (eq match 'SELECT)
-                             (looking-at-p (apex-mode--soql-select-align-clauses-regexp)))
-                        (and (eq match 'FIND)
-                             (looking-at-p (apex-mode--soql-find-align-clauses-regexp))))
-              (setq new-indent (+ (current-column) c-basic-offset))))
-           ;; var = [
-           ;;     SELECT arg1,
-           ;;         arg2      <- c-basic-offset
-           ;;     FROM arg3
-           ((and (eq sym 'arglist-cont)
-                 (setq match (apex-mode--soql-or-sosl-stmt-match anchor-pos)))
-            (unless (or (and (eq match 'SELECT)
-                             (looking-at-p (apex-mode--soql-select-align-clauses-regexp)))
-                        (and (eq match 'FIND)
-                             (looking-at-p (apex-mode--soql-find-align-clauses-regexp))))
-              (setq new-indent (+ (current-column) c-basic-offset)))))
-          (c-shift-line-indentation (- new-indent org-indent)))))))
+  (let ((langelem (car (nreverse c-syntactic-context)))
+        (point-offset (- (current-column) (save-excursion
+                                            (back-to-indentation)
+                                            (current-column)))))
+    (back-to-indentation)
+    (c-shift-line-indentation
+     (- (apex-mode--get-soql-and-sosl-indentation langelem) (current-column)))
+    (forward-char point-offset)))
 
 ;;;; mode
 
