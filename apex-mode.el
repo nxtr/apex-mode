@@ -164,7 +164,8 @@
 (defun apex-mode--soql-select-align-clauses-regexp ()
   (eval-when-compile
     (regexp-opt
-     '("FROM" "USING" "WHERE" "WITH" "GROUP" "ORDER" "LIMIT" "OFFSET" "FOR")
+     '("FROM" "USING" "WHERE" "WITH" "GROUP" "HAVING" "ORDER" "LIMIT" "OFFSET"
+       "FOR")
      'words)))
 
 (defun apex-mode--sosl-find-align-clauses-regexp ()
