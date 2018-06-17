@@ -251,7 +251,7 @@ Keywords here should also be in `c-block-stmt-1-kwds'."
 (c-lang-defconst c-simple-stmt-kwds
   "Statement keywords followed by an expression or nothing."
   apex '("break" "continue" "delete" "insert" "merge" "return" "throw" "undelete"
-         "update" "upsert"))
+         "update" "upsert" "switch" "when"))
 
 (c-lang-defconst c-case-kwds
   "The keyword(s) which introduce a \"case\" like construct.
