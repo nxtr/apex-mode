@@ -168,6 +168,14 @@
        "FOR")
      'words)))
 
+(defun apex-mode--soql-typeof-clauses-regexp ()
+  (eval-when-compile
+    (regexp-opt '("WHEN" "ELSE" "THEN") 'words)))
+
+(defun apex-mode--soql-typeof-clauses-match (_)
+  (when (looking-at (apex-mode--soql-typeof-clauses-regexp))
+    (intern (upcase (match-string-no-properties 0)))))
+
 (defun apex-mode--sosl-find-align-clauses-regexp ()
   (eval-when-compile
     (regexp-opt '("IN" "RETURNING" "WITH" "LIMIT" "UPDATE") 'words)))
@@ -193,13 +201,21 @@
   (+ (current-column)
      (pcase statement
        ((and 'SELECT
+             (app (apex-mode--soql-typeof-clauses-match) clause)
+             (guard clause))
+        (+ (c-calc-offset '(statement-block-intro))
+           (c-calc-offset '(statement-cont))
+           (if (eq clause 'THEN)
+               (c-calc-offset '(statement-cont))
+             0)))
+       ((and 'SELECT
              (guard
               (not (looking-at-p (apex-mode--soql-select-align-clauses-regexp)))))
         (c-calc-offset '(statement-cont)))
        ((and 'FIND
              (guard
-              (not (looking-at-p (apex--soql-find-align-clauses-regexp)))))
-        c-basic-offset)
+              (not (looking-at-p (apex-mode--sosl-find-align-clauses-regexp)))))
+        (c-calc-offset '(statement-cont)))
        (_ 0))))
 
 (defun apex-mode--get-soql-and-sosl-indentation (langelem)
