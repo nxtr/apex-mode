@@ -127,6 +127,7 @@
  "apex"
  '("java"
    (c-offsets-alist . ((arglist-intro . *)
+                       (arglist-close . c-lineup-close-paren)
                        (statement-cont . *)
                        (else-clause . apex-mode--lineup-else-after-when)))))
 
