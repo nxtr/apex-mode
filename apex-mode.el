@@ -123,8 +123,29 @@
 
 ;;;; style
 
-(c-add-style "apex" '("java" (c-offsets-alist . ((arglist-intro . *)
-                                                 (statement-cont . *)))))
+(c-add-style
+ "apex"
+ '("java"
+   (c-offsets-alist . ((arglist-intro . *)
+                       (statement-cont . *)
+                       (else-clause . apex-mode--lineup-else-after-when)))))
+
+(defun apex-mode--switch-when-clauses-regexp ()
+  (eval-when-compile
+    (regexp-opt '("when") 'words)))
+
+(defvar c-syntactic-element)
+
+(defun apex-mode--lineup-else-after-when (langelem)
+  (let ((pos (c-langelem-pos c-syntactic-element)))
+    (if (and pos (save-excursion
+                   (goto-char pos)
+                   (looking-at-p (apex-mode--switch-when-clauses-regexp))))
+        (c-calc-offset '(statement-cont))
+      (let ((sym (c-langelem-sym langelem)))
+        (c-evaluate-offset
+         (cdr (assq sym (assq 'c-offsets-alist c-fallback-style)))
+         langelem sym)))))
 
 ;;;; syntax-table
 
