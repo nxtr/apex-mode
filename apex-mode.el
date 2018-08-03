@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; This is a major mode for editing Apex code.
+;; This is a major mode for editing Apex, SOQL and SOSL code.
 
 ;;; Code:
 
@@ -82,45 +82,6 @@
 (defvar apex-font-lock-keywords apex-font-lock-keywords-3
   "Default expressions to highlight in Apex mode.")
 
-;;;; font-lock soql and sosl
-
-(defvar apex-mode--soql-and-sosl-kwds-regexp
-  (eval-when-compile
-    (regexp-opt
-     '("SELECT" "TYPEOF" "WHEN" "THEN" "ELSE" "END" "FROM" "USING"
-       "SCOPE" "WHERE" "WITH" "DATA" "CATEGORY" "AT" "ABOVE" "BELOW"
-       "ABOVE_OR_BELOW" "GROUP" "BY" "ROLLUP" "CUBE" "GROUPING" "HAVING"
-       "ORDER" "ASC" "DESC" "NULLS" "FIRST" "LAST" "LIMIT" "OFFSET"
-       "FOR" "VIEW" "REFERENCE" "UPDATE" "TRACKING" "VIEWSTAT" "TRUE"
-       "FALSE" "LIKE" "IN" "NOT" "AND" "OR" "INCLUDES" "EXCLUDES"
-       "AVG" "COUNT" "COUNT_DISTINCT" "MIN" "MAX" "SUM" "DISTANCE"
-       "GEOLOCATION" "FORMAT" "CALENDAR_MONTH" "CALENDAR_QUARTER"
-       "CALENDAR_YEAR" "DAY_IN_MONTH" "DAY_IN_WEEK" "DAY_IN_YEAR"
-       "DAY_ONLY" "FISCAL_MONTH" "FISCAL_QUARTER" "FISCAL_YEAR"
-       "HOUR_IN_DAY" "WEEK_IN_MONTH" "WEEK_IN_YEAR" "YESTERDAY" "TODAY"
-       "TOMORROW" "LAST_WEEK" "THIS_WEEK" "NEXT_WEEK" "LAST_MONTH"
-       "THIS_MONTH" "NEXT_MONTH" "LAST_90_DAYS" "NEXT_90_DAYS"
-       "LAST_N_DAYS" "NEXT_N_DAYS" "LAST_N_WEEKS" "NEXT_N_WEEKS"
-       "LAST_N_MONTHS" "NEXT_N_MONTHS" "THIS_QUARTER" "LAST_QUARTER"
-       "NEXT_QUARTER" "LAST_N_QUARTERS" "NEXT_N_QUARTERS" "THIS_YEAR"
-       "NEXT_YEAR" "LAST_YEAR" "LAST_N_YEARS" "NEXT_N_YEARS"
-       "THIS_FISCAL_QUARTER" "LAST_FISCAL_QUARTER" "NEXT_FISCAL_QUARTER"
-       "LAST_N_FISCAL_QUARTERS" "NEXT_N_FISCAL_QUARTERS" "THIS_FISCAL_YEAR"
-       "LAST_FISCAL_YEAR" "NEXT_FISCAL_YEAR" "LAST_N_FISCAL_YEARS"
-       "NEXT_N_FISCAL_YEARS" "FIND" "RETURNING" "SNIPPET"
-       "NETWORK" "HIGHLIGHT" "METADATA" "ALL" "FIELDS" "EMAIL" "NAME"
-       "PHONE" "SIDEBAR")
-     'words)))
-
-(defun apex-mode--soql-or-sosl-font-lock-matcher (limit)
-  "Search for soql or sosl keywords not in comments."
-  (let (res)
-    (while
-        (and (setq res (re-search-forward apex-mode--soql-and-sosl-kwds-regexp
-                                          limit t))
-             (eql (syntax-ppss-context (syntax-ppss)) 'comment)))
-    res))
-
 ;;;; style
 
 (c-add-style
@@ -177,96 +138,10 @@
 
 ;;;; imenu
 
-(defconst cc-imenu-apex-generic-expression
-  cc-imenu-java-generic-expression
-  "Imenu generic expression for Apex mode.  See `imenu-generic-expression'.")
-
-;;;; soql and sosl special indent
-
-(defun apex-mode--soql-select-align-clauses-regexp ()
-  (eval-when-compile
-    (regexp-opt
-     '("FROM" "USING" "WHERE" "WITH" "GROUP" "HAVING" "ORDER" "LIMIT" "OFFSET"
-       "FOR")
-     'words)))
-
-(defun apex-mode--soql-typeof-clauses-regexp ()
-  (eval-when-compile
-    (regexp-opt '("WHEN" "ELSE" "THEN") 'words)))
-
-(defun apex-mode--soql-typeof-clauses-match (_)
-  (when (looking-at (apex-mode--soql-typeof-clauses-regexp))
-    (intern (upcase (match-string-no-properties 0)))))
-
-(defun apex-mode--sosl-find-align-clauses-regexp ()
-  (eval-when-compile
-    (regexp-opt '("IN" "RETURNING" "WITH" "LIMIT" "UPDATE") 'words)))
-
-(defun apex-mode--soql-and-sosl-stmt-regexp ()
-  (eval-when-compile
-    (regexp-opt '("SELECT" "FIND") 'words)))
-
-(defun apex-mode--soql-or-sosl-bracket-stmt-match (pos &rest _)
-  (when (member (char-after pos) '(?\[ ?\())
-    (save-excursion
-      (goto-char (1+ pos))
-      (forward-comment (point-max))
-      (apex-mode--soql-or-sosl-stmt-match (point)))))
-
-(defun apex-mode--soql-or-sosl-stmt-match (pos &rest _)
-  (save-excursion
-    (goto-char pos)
-    (when (looking-at (apex-mode--soql-and-sosl-stmt-regexp))
-      (intern (upcase (match-string-no-properties 0))))))
-
-(defun apex-mode--get-soql-and-sosl-stmt-indentation (statement)
-  (+ (current-column)
-     (pcase statement
-       ((and 'SELECT
-             (app (apex-mode--soql-typeof-clauses-match) clause)
-             (guard clause))
-        (+ (c-calc-offset '(statement-block-intro))
-           (c-calc-offset '(statement-cont))
-           (if (eq clause 'THEN)
-               (c-calc-offset '(statement-cont))
-             0)))
-       ((and 'SELECT
-             (guard
-              (not (looking-at-p (apex-mode--soql-select-align-clauses-regexp)))))
-        (c-calc-offset '(statement-cont)))
-       ((and 'FIND
-             (guard
-              (not (looking-at-p (apex-mode--sosl-find-align-clauses-regexp)))))
-        (c-calc-offset '(statement-cont)))
-       (_ 0))))
-
-(defun apex-mode--get-soql-and-sosl-indentation (langelem)
-  (pcase (c-langelem-sym langelem)
-    ((and 'arglist-cont-nonempty
-          (app (apex-mode--soql-or-sosl-bracket-stmt-match
-                (c-langelem-2nd-pos langelem))
-               statement)
-          (guard statement))
-     (apex-mode--get-soql-and-sosl-stmt-indentation statement))
-    ((and 'arglist-cont
-          (app (apex-mode--soql-or-sosl-stmt-match
-                (c-langelem-pos langelem))
-               statement)
-          (guard statement))
-     (apex-mode--get-soql-and-sosl-stmt-indentation statement))
-    (_ (current-column))))
-
-(defvar c-syntactic-context)
-
-(defun apex-mode--soql-and-sosl-indent-hook ()
-  (let ((langelem (car (nreverse c-syntactic-context)))
-        (point-offset (- (current-column) (save-excursion
-                                            (back-to-indentation)
-                                            (current-column)))))
-    (back-to-indentation)
-    (c-shift-line-indentation
-     (- (apex-mode--get-soql-and-sosl-indentation langelem) (current-column)))
-    (forward-char point-offset)))
+(eval-when-compile
+  (defconst cc-imenu-apex-generic-expression
+    cc-imenu-java-generic-expression
+    "Imenu generic expression for Apex mode.  See `imenu-generic-expression'."))
 
 ;;;; mode
 
@@ -293,15 +168,54 @@ Key bindings:
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (c-run-mode-hooks 'c-mode-common-hook))
 
-;;;; hooks
+;;;; submodes
 
-(defun apex-mode--font-lock-hook ()
-  (font-lock-add-keywords
-   nil
-   `((apex-mode--soql-or-sosl-font-lock-matcher 0 font-lock-keyword-face prepend))
-   'append ))
+(require 'submode)
 
-(add-hook 'apex-mode-hook 'apex-mode--font-lock-hook)
+(require 'soql-mode)
+(defconst apex-mode--soql-submode
+  (submode-construct-submode
+   'soql-mode
+   :name "(SOQL)"
+   :relative-indent 'block
+   :syntax-propertize-rules
+   (syntax-propertize-precompile-rules
+    ("\\\[[ \t\n]*SELECT[ \t\n]"
+     (0 (ignore
+         (goto-char (1+ (match-beginning 0)))
+         (submode-syntax-propertize apex-mode--soql-submode end)))))
+   :end-tag "]"
+   :syntax-table soql-mode-syntax-table
+   :keymap soql-mode-map))
+
+(require 'sosl-mode)
+(defconst apex-mode--sosl-submode
+  (submode-construct-submode
+   'sosl-mode
+   :name "(SOSL)"
+   :relative-indent 'block
+   :syntax-propertize-rules
+   (syntax-propertize-precompile-rules
+    ("\\\[[ \t\n]*FIND[ \t\n]"
+     (0 (ignore
+         (goto-char (1+ (match-beginning 0)))
+         (submode-syntax-propertize apex-mode--sosl-submode end)))))
+   :end-tag "]"
+   :syntax-table sosl-mode-syntax-table
+   :keymap sosl-mode-map))
+
+(add-hook
+ 'apex-mode-hook
+ (lambda ()
+   (submode-construct-main-mode
+    :name '("Apex" (:eval (submode-lighter)))
+    :case-fold-search apex-mode-keywords-case-fold
+    :submodes '(apex-mode--soql-submode apex-mode--sosl-submode)
+    :config
+    '((c-update-modeline)               ; Refresh mode-name
+      ;; Let submode case-fold follow main-mode
+      (setq soql-mode-keywords-case-fold apex-mode-keywords-case-fold)
+      (setq sosl-mode-keywords-case-fold apex-mode-keywords-case-fold)))))
 
 ;;;###autoload
 (setq auto-mode-alist
