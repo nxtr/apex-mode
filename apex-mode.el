@@ -276,10 +276,9 @@
 
 Key bindings:
 \\{apex-mode-map}"
+  :after-hook (c-update-modeline)
   (c-initialize-cc-mode t)
-  (set-syntax-table apex-mode-syntax-table)
-  (setq local-abbrev-table apex-mode-abbrev-table
-        abbrev-mode t)
+  (setq abbrev-mode t)
   (use-local-map apex-mode-map)
   (c-init-language-vars apex-mode)
   (c-common-init 'apex-mode)
@@ -288,11 +287,11 @@ Key bindings:
               (assq 'apex-mode c-default-style))
     (c-set-style "apex"))
   (easy-menu-add c-apex-menu)
-  (progn (require 'cc-menus)
-         (cc-imenu-init cc-imenu-apex-generic-expression))
+  (eval-when-compile
+    (require 'cc-menus)
+    (cc-imenu-init cc-imenu-apex-generic-expression))
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
-  (setq c-buffer-is-cc-mode 'java-mode)
-  (add-hook 'c-special-indent-hook 'apex-mode--soql-and-sosl-indent-hook))
+  (c-run-mode-hooks 'c-mode-common-hook))
 
 ;;;; hooks
 
