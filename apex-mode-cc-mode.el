@@ -60,7 +60,7 @@
                   (apply 'apex-mode-c-cheap-inside-bracelist-p args)
                 (apply cc-fun args))))
 
-(defun apex-mode-c-inside-bracelist-p (containing-sexp paren-state)
+(defun apex-mode--c-inside-bracelist-p (containing-sexp paren-state &rest _)
   ;; return the buffer position of the beginning of the brace list
   ;; statement if we're inside a brace list, otherwise return nil.
   ;; CONTAINING-SEXP is the buffer pos of the innermost containing
@@ -68,90 +68,55 @@
   ;; braces
   ;;
   ;; This function might do hidden buffer changes.
-  (or
-   ;; This will pick up brace list declarations.
-   (save-excursion
-     (goto-char containing-sexp)
-     (c-backward-over-enum-header))
-   ;; this will pick up array/aggregate init lists, even if they are nested.
-   (save-excursion
-     (let (bufpos braceassignp lim next-containing _macro-start)
-       (while (and (not bufpos)
-		   containing-sexp)
-	 (when paren-state
-	   (if (consp (car paren-state))
-	       (setq lim (cdr (car paren-state))
-		     paren-state (cdr paren-state))
-	     (setq lim (car paren-state)))
-	   (when paren-state
-	     (setq next-containing (car paren-state)
-		   paren-state (cdr paren-state))))
-	 (goto-char containing-sexp)
-	 (if (c-looking-at-inexpr-block next-containing next-containing)
-	     ;; We're in an in-expression block of some kind.  Do not
-	     ;; check nesting.  We deliberately set the limit to the
-	     ;; containing sexp, so that c-looking-at-inexpr-block
-	     ;; doesn't check for an identifier before it.
-	     (setq containing-sexp nil)
-	   ;; see if the open brace is preceded by = or [...]
-           ;; or <...> in this statement
-	   (setq braceassignp 'dontknow)
-	   (c-backward-token-2 1 t lim)
-	   ;; Checks to do only on the first sexp before the brace.
-	   (when (and c-opt-inexpr-brace-list-key
-		      (memq (char-after) '(?\[ ?\<)))
-	     ;; In Apex, an initialization brace list may follow
-	     ;; directly after "new Foo[] or List<...>", so check for a "new"
-	     ;; earlier.
-	     (while (eq braceassignp 'dontknow)
-	       (setq braceassignp
-		     (cond ((/= (c-backward-token-2 1 t lim) 0) nil)
-			   ((looking-at c-opt-inexpr-brace-list-key) t)
-			   ((looking-at "\\sw\\|\\s_\\|[.[<]")
-			    ;; Carry on looking if this is an
-			    ;; identifier (may contain "." in Apex)
-			    ;; or another "[]" or "<> sexp.
-			    'dontknow)
-			   (t nil)))))
-	   ;; Checks to do on all sexps before the brace, up to the
-	   ;; beginning of the statement.
-	   (while (eq braceassignp 'dontknow)
-	     (cond ((eq (char-after) ?\;)
-		    (setq braceassignp nil))
-		   ((eq (char-after) ?=)
-		    ;; We've seen a =, but must check earlier tokens so
-		    ;; that it isn't something that should be ignored.
-		    (setq braceassignp 'maybe)
-		    (while (and (eq braceassignp 'maybe)
-				(zerop (c-backward-token-2 1 t lim)))
-		      (setq braceassignp
-			    (cond ((looking-at "\\s.") 'maybe)
-                                  (t t))))))
-	     (if (and (eq braceassignp 'dontknow)
-		      (/= (c-backward-token-2 1 t lim) 0))
-		 (setq braceassignp nil)))
-	   (cond
-	    (braceassignp
-	     ;; We've hit the beginning of the aggregate list.
-	     (c-beginning-of-statement-1
-	      (c-most-enclosing-brace paren-state))
-	     (setq bufpos (point)))
-	    ((eq (char-after) ?\;)
-	     ;; Brace lists can't contain a semicolon, so we're done.
-	     (setq containing-sexp nil))
-	    (t
-	     ;; Go up one level
-	     (setq containing-sexp next-containing
-		   lim nil
-		   next-containing nil)))))
-
-       bufpos))
-   ))
+  (save-excursion
+    (let (bufpos braceassignp lim next-containing _macro-start)
+      (while (and (not bufpos)
+                  containing-sexp)
+        (when paren-state
+          (if (consp (car paren-state))
+              (setq lim (cdr (car paren-state))
+                    paren-state (cdr paren-state))
+            (setq lim (car paren-state)))
+          (when paren-state
+            (setq next-containing (car paren-state)
+                  paren-state (cdr paren-state))))
+        (goto-char containing-sexp)
+        (if (c-looking-at-inexpr-block next-containing next-containing)
+            ;; We're in an in-expression block of some kind.  Do not
+            ;; check nesting.  We deliberately set the limit to the
+            ;; containing sexp, so that c-looking-at-inexpr-block
+            ;; doesn't check for an identifier before it.
+            (setq containing-sexp nil)
+          (setq braceassignp 'dontknow)
+          (c-backward-token-2 1 t lim)
+          ;; Checks to do only on the first sexp before the brace.
+          (when (and c-opt-inexpr-brace-list-key
+                     (memq (char-after) '(?\[ ?\<)))
+            ;; In Apex, an initialization brace list may follow
+            ;; directly after "new Foo[]" or "List<...>" etc.,
+            ;; so check for a "new" earlier.
+            (while (eq braceassignp 'dontknow)
+              (setq braceassignp
+                    (cond ((/= (c-backward-token-2 1 t lim) 0) nil)
+                          ((looking-at c-opt-inexpr-brace-list-key) t)
+                          ((looking-at "\\sw\\|\\s_\\|[.]")
+                           ;; Carry on looking if this is an
+                           ;; identifier (may contain "." in Apex)
+                           'dontknow)
+                          (t nil)))))
+          (cond
+           ((eq braceassignp t)
+            (c-beginning-of-statement-1
+             (c-most-enclosing-brace paren-state))
+            (setq bufpos (point)))
+           (t
+            (setq containing-sexp nil)))))
+      bufpos)))
 
 (advice-add 'c-inside-bracelist-p :around
             (lambda (cc-fun &rest args)
               (if (eq major-mode 'apex-mode)
-                  (apply 'apex-mode-c-inside-bracelist-p args)
+                  (apply 'apex-mode--c-inside-bracelist-p args)
                 (apply cc-fun args))))
 
 ;;;; cc-langs
