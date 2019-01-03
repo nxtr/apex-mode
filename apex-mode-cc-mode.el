@@ -123,11 +123,20 @@
 
 (require 'cc-langs)
 
+(c-lang-defconst c-recognize-<>-arglists
+  apex t)
+
 (c-lang-defconst c-identifier-syntax-modifications
   "A list that describes the modifications that should be done to the
 mode syntax table to get a syntax table that matches all identifiers
 and keywords as words."
   apex '((?@ ."w") (?_ . "w")))
+
+(c-lang-defconst c-symbol-start
+  "Regexp that matches the start of a symbol, i.e. any identifier or
+keyword.  It's unspecified how far it matches.  Does not contain a \\|
+operator at the top level."
+  apex (concat "[" c-alpha "_]"))
 
 (c-lang-defconst c-symbol-chars
   "Set of characters that can be part of a symbol.
@@ -142,6 +151,97 @@ in identifiers.  nil in languages that don't have such things."
 (c-lang-defconst c-assignment-operators
   "List of all assignment operators."
   apex '("=" "*=" "/=" "+=" "-=" ">>=" "<<=" "&=" "^=" "|=" ">>>="))
+
+(c-lang-defconst c-operators
+  "List describing all operators, along with their precedence and
+associativity.  The order in the list corresponds to the precedence of
+the operators: The operators in each element are a group with the same
+precedence, and the group has higher precedence than the groups in all
+following elements.  The car of each element describes the type of the
+operator group, and the cdr is a list of the operator tokens in it.
+The operator group types are:
+
+`prefix'        Unary prefix operators.
+`postfix'       Unary postfix operators.
+`postfix-if-paren'
+                Unary postfix operators if and only if the chars have
+                parenthesis syntax.
+`left-assoc'    Binary left associative operators (i.e. a+b+c means (a+b)+c).
+`right-assoc'   Binary right associative operators (i.e. a=b=c means a=(b=c)).
+`right-assoc-sequence'
+                Right associative operator that constitutes of a
+                sequence of tokens that separate expressions.  All the
+                tokens in the group are in this case taken as
+                describing the sequence in one such operator, and the
+                order between them is therefore significant.
+
+Operators containing a character with paren syntax are taken to match
+with a corresponding open/close paren somewhere else.  A postfix
+operator with close paren syntax is taken to end a postfix expression
+started somewhere earlier, rather than start a new one at point.  Vice
+versa for prefix operators with open paren syntax.
+
+Note that operators like \".\" and \"->\" which in language references
+often are described as postfix operators are considered binary here,
+since CC Mode treats every identifier as an expression."
+  apex `(;; Primary.
+         ,@(c-lang-const c-identifier-ops)
+         (postfix-if-paren "<" ">")       ; Templates.
+         (prefix "super")
+
+         ;; Postfix.
+         (left-assoc ".")
+         (postfix "++" "--" "[" "]" "(" ")")
+
+         ;; Unary.
+         (prefix "++" "--" "+" "-" "!"
+                 ;; The following need special treatment.
+                 "new"
+                 "(" ")")                  ; Cast.
+
+         ;; Multiplicative.
+         (left-assoc "*" "/" "%")
+
+         ;; Additive.
+         (left-assoc "+" "-")
+
+         ;; Shift.
+         (left-assoc "<<" ">>" ">>>")
+
+         ;; Relational.
+         (left-assoc "<" ">" "<=" ">=" "instanceof")
+
+         ;; Equality.
+         (left-assoc "==" "!=" "===" "!==")
+
+         ;; Bitwise and.
+         (left-assoc "&")
+
+         ;; Bitwise exclusive or.
+         (left-assoc "^")
+
+         ;; Bitwise or.
+         (left-assoc "|")
+
+         ;; Logical and.
+         (left-assoc "&&")
+
+         ;; Logical or.
+         (left-assoc "||")
+
+         ;; Conditional.
+         (right-assoc-sequence "?" ":")
+         (left-assoc "?.")
+
+         ;; Assignment.
+         (right-assoc ,@(c-lang-const c-assignment-operators))
+
+         ;; Sequence.
+         (left-assoc ",")))
+
+(c-lang-defconst c-paragraph-start
+  "Regexp to append to `paragraph-start'."
+  apex "$")
 
 (c-lang-defconst c-primitive-type-kwds
   "Primitive type keywords.  As opposed to the other keyword lists, the
@@ -204,6 +304,10 @@ special case when the list can contain only one element.)  Assumed to
 be mutually exclusive with `c-type-list-kwds'."
   apex nil)
 
+(c-lang-defconst c-inside-<>-type-kwds
+  "Keywords which, used inside a C++ style template arglist, introduce a type."
+  apex nil)
+
 (c-lang-defconst c-block-stmt-1-2-kwds
   "Statement keywords optionally followed by a paren sexp.
 Keywords here should also be in `c-block-stmt-1-kwds'."
@@ -235,17 +339,26 @@ This construct is \"<keyword> <expression> :\"."
   "Keywords that can start classes inside expressions."
   apex nil)
 
-(c-lang-defconst c-inexpr-brace-list-kwds
-  "Keywords that can start brace list blocks inside expressions.
-Note that Java specific rules are currently applied to tell this from
-`c-inexpr-class-kwds'."
-  apex '("new"))
+(c-lang-defconst c-std-abbrev-keywords
+  "List of keywords which may need to cause electric indentation."
+  t '("else" "while" "catch" "finally"))
 
 (c-lang-defconst c-block-prefix-disallowed-chars
   "List of syntactically relevant characters that never can occur before
 the open brace in any construct that contains a brace block."
-  apex (c--set-difference (c-lang-const c-block-prefix-disallowed-chars)
-                          '(?,)))
+  apex nil)
+
+(c-lang-defconst c-type-decl-suffix-key
+  "Regexp matching the declarator operators that might follow after the
+identifier in a declaration, e.g. the \"[\" in \"char argv[]\".  This
+regexp should match \")\" if parentheses are valid in declarators.  If
+it matches an open paren of some kind, the type declaration check
+continues at the corresponding close paren, otherwise the end of the
+first submatch is taken as the end of the operator.  Identifier syntax
+is in effect when this is matched (see `c-identifier-syntax-table')."
+  ;; Default to a regexp that matches `c-type-modifier-kwds' and a
+  ;; function argument list parenthesis.
+  apex "\\([[]\\)")
 
 (c-lang-defconst c-recognize-typeless-decls
   "Non-nil means function declarations without return type should be
@@ -255,6 +368,17 @@ recognized."
 (c-lang-defconst c-enums-contain-decls
   "Non-nil means that an enum structure can contain declarations."
   apex nil)
+
+(c-lang-defconst c-recognize-bare-brace-inits
+  "Non-nil means that brace initializers without \"=\" exist,
+i.e. constructs like
+
+int foo[] {1, 2, 3};
+
+in addition to the more classic
+
+int foo[] = {1, 2, 3};"
+  apex t)
 
 (c-lang-defconst c-recognize-colon-labels
   "Non-nil if generic labels ending with \":\" should be recognized."
