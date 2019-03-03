@@ -104,6 +104,12 @@
 (advice-add 'c-inside-bracelist-p :before-until
             'apex-mode--c-inside-bracelist-p)
 
+(define-advice c-guess-basic-syntax (:around (cc-fun &rest args))
+  (if (eq major-mode 'apex-mode)
+      (let ((c-buffer-is-cc-mode 'java-mode))
+        (apply cc-fun args))
+    (apply cc-fun args)))
+
 ;;;; cc-langs
 
 (require 'cc-langs)
