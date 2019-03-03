@@ -116,7 +116,8 @@
 (unless apex-mode-syntax-table
   (setq apex-mode-syntax-table
         (funcall (c-lang-const c-make-mode-syntax-table apex)))
-  (modify-syntax-entry ?_ "w" apex-mode-syntax-table))
+  (modify-syntax-entry ?_ "w" apex-mode-syntax-table)
+  (modify-syntax-entry ?\" "." apex-mode-syntax-table))
 
 ;;;; abbrev-table
 
