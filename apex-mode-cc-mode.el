@@ -152,6 +152,18 @@ mode syntax table to get a syntax table that matches all identifiers
 and keywords as words."
   apex '((?@ ."w") (?_ . "w")))
 
+(c-lang-defconst c-get-state-before-change-functions
+  ;; For documentation see the following c-lang-defvar of the same name.
+  ;; The value here may be a list of functions or a single function.
+  apex nil)
+
+(c-lang-defconst c-before-font-lock-functions
+  ;; For documentation see the following c-lang-defvar of the same name.
+  ;; The value here may be a list of functions or a single function.
+  apex '(c-depropertize-new-text
+         c-restore-<>-properties
+         c-change-expand-fl-region))
+
 (c-lang-defconst c-symbol-start
   "Regexp that matches the start of a symbol, i.e. any identifier or
 keyword.  It's unspecified how far it matches.  Does not contain a \\|
