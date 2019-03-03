@@ -62,6 +62,32 @@
                     (t nil)))))
     braceassignp))
 
+(defun apex-mode--c-looking-at-or-maybe-in-bracelist (&optional containing-sexp lim)
+  ;; Point is at an open brace.  If this starts a brace list, return a list
+  ;; whose car is the buffer position of the start of the construct which
+  ;; introduces the list, and whose cdr is t if we have parsed a keyword
+  ;; matching `c-opt-inexpr-brace-list-key', nil otherwise.
+
+  ;; CONTAINING-SEXP is the position of the brace/paren/bracket enclosing
+  ;; POINT, or nil if there is no such position, or we do not know it.  LIM is
+  ;; a backward search limit.
+  ;;
+  ;; The determination of whether the brace starts a brace list is solely by
+  ;; the context of the brace, not by its contents.
+  ;;
+  ;; Here, "brace list" does not include the body of an enum.
+  (and (eq major-mode 'apex-mode)
+       (save-excursion
+         (let ((braceassignp 'dontknow))
+           (c-backward-token-2 1 t lim)
+           ;; Checks to do only on the first sexp before the brace.
+           (setq braceassignp (apex-mode--brace-assign lim))
+           (cond
+            ((eq braceassignp t)
+             (c-beginning-of-statement-1 containing-sexp)
+             (cons (point) t))
+            (t nil))))))
+
 (defun apex-mode--c-inside-bracelist-p (containing-sexp paren-state &rest _)
   ;; return the buffer position of the beginning of the brace list
   ;; statement if we're inside a brace list, otherwise return nil.
@@ -101,8 +127,11 @@
                 (t (setq containing-sexp nil)))))
            bufpos))))
 
-(advice-add 'c-inside-bracelist-p :before-until
-            'apex-mode--c-inside-bracelist-p)
+(if (fboundp 'c-looking-at-or-maybe-in-bracelist)
+    (advice-add 'c-looking-at-or-maybe-in-bracelist :before-until
+                'apex-mode--c-looking-at-or-maybe-in-bracelist)
+  (advice-add 'c-inside-bracelist-p :before-until
+              'apex-mode--c-inside-bracelist-p))
 
 (define-advice c-guess-basic-syntax (:around (cc-fun &rest args))
   (if (eq major-mode 'apex-mode)
