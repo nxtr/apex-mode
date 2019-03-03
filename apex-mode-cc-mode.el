@@ -44,6 +44,24 @@
   ;; Apex-mode returns nil
   (not (eq major-mode 'apex-mode)))
 
+(defun apex-mode--brace-assign (lim)
+  (let ((braceassignp 'dontknow))
+    (when (and c-opt-inexpr-brace-list-key
+               (memq (char-after) '(?\[ ?\<)))
+      ;; In Apex, an initialization brace list may follow
+      ;; directly after "new Foo[]" or "List<...>" etc.,
+      ;; so check for a "new" earlier.
+      (while (eq braceassignp 'dontknow)
+        (setq braceassignp
+              (cond ((/= (c-backward-token-2 1 t lim) 0) nil)
+                    ((looking-at c-opt-inexpr-brace-list-key) t)
+                    ((looking-at "\\sw\\|\\s_\\|[.]")
+                     ;; Carry on looking if this is an
+                     ;; identifier (may contain "." in Apex)
+                     'dontknow)
+                    (t nil)))))
+    braceassignp))
+
 (defun apex-mode--c-inside-bracelist-p (containing-sexp paren-state &rest _)
   ;; return the buffer position of the beginning of the brace list
   ;; statement if we're inside a brace list, otherwise return nil.
@@ -72,23 +90,9 @@
                  ;; containing sexp, so that c-looking-at-inexpr-block
                  ;; doesn't check for an identifier before it.
                  (setq containing-sexp nil)
-               (setq braceassignp 'dontknow)
                (c-backward-token-2 1 t lim)
                ;; Checks to do only on the first sexp before the brace.
-               (when (and c-opt-inexpr-brace-list-key
-                          (memq (char-after) '(?\[ ?\<)))
-                 ;; In Apex, an initialization brace list may follow
-                 ;; directly after "new Foo[]" or "List<...>" etc.,
-                 ;; so check for a "new" earlier.
-                 (while (eq braceassignp 'dontknow)
-                   (setq braceassignp
-                         (cond ((/= (c-backward-token-2 1 t lim) 0) nil)
-                               ((looking-at c-opt-inexpr-brace-list-key) t)
-                               ((looking-at "\\sw\\|\\s_\\|[.]")
-                                ;; Carry on looking if this is an
-                                ;; identifier (may contain "." in Apex)
-                                'dontknow)
-                               (t nil)))))
+               (setq braceassignp (apex-mode--brace-assign lim))
                (cond
                 ((eq braceassignp t)
                  (c-beginning-of-statement-1
