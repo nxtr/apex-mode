@@ -32,33 +32,17 @@
 
 (require 'cc-align)
 
-(defun apex-mode-c-block-in-arglist-dwim (_arglist-start)
-  ;; This function implements the DWIM to avoid far indentation of
-  ;; brace block constructs in arguments in `c-lineup-arglist' etc.
-  ;; Return non-nil if a brace block construct is detected within the
-  ;; arglist starting at ARGLIST-START.
-  nil)
-
-(advice-add 'c-block-in-arglist-dwim :around
-            (lambda (cc-fun &rest args)
-              (if (eq major-mode 'apex-mode)
-                  (apply 'apex-mode-c-block-in-arglist-dwim args)
-                (apply cc-fun args))))
+(define-advice c-block-in-arglist-dwim (:before-while (&rest _))
+  ;; Apex has no statement blocks in arglists, return nil
+  (not (eq major-mode 'apex-mode)))
 
 ;;;; cc-engine
 
 (require 'cc-engine)
 
-(defun apex-mode-c-cheap-inside-bracelist-p (_paren-state)
-  ;; Return the position of the L-brace if point is inside a brace list
-  ;; initialization of an array, etc.
-  nil)
-
-(advice-add 'c-cheap-inside-bracelist-p :around
-            (lambda (cc-fun &rest args)
-              (if (eq major-mode 'apex-mode)
-                  (apply 'apex-mode-c-cheap-inside-bracelist-p args)
-                (apply cc-fun args))))
+(define-advice c-cheap-inside-bracelist-p (:before-while (&rest _))
+  ;; Apex-mode returns nil
+  (not (eq major-mode 'apex-mode)))
 
 (defun apex-mode--c-inside-bracelist-p (containing-sexp paren-state &rest _)
   ;; return the buffer position of the beginning of the brace list
@@ -68,56 +52,53 @@
   ;; braces
   ;;
   ;; This function might do hidden buffer changes.
-  (save-excursion
-    (let (bufpos braceassignp lim next-containing _macro-start)
-      (while (and (not bufpos)
-                  containing-sexp)
-        (when paren-state
-          (if (consp (car paren-state))
-              (setq lim (cdr (car paren-state))
-                    paren-state (cdr paren-state))
-            (setq lim (car paren-state)))
-          (when paren-state
-            (setq next-containing (car paren-state)
-                  paren-state (cdr paren-state))))
-        (goto-char containing-sexp)
-        (if (c-looking-at-inexpr-block next-containing next-containing)
-            ;; We're in an in-expression block of some kind.  Do not
-            ;; check nesting.  We deliberately set the limit to the
-            ;; containing sexp, so that c-looking-at-inexpr-block
-            ;; doesn't check for an identifier before it.
-            (setq containing-sexp nil)
-          (setq braceassignp 'dontknow)
-          (c-backward-token-2 1 t lim)
-          ;; Checks to do only on the first sexp before the brace.
-          (when (and c-opt-inexpr-brace-list-key
-                     (memq (char-after) '(?\[ ?\<)))
-            ;; In Apex, an initialization brace list may follow
-            ;; directly after "new Foo[]" or "List<...>" etc.,
-            ;; so check for a "new" earlier.
-            (while (eq braceassignp 'dontknow)
-              (setq braceassignp
-                    (cond ((/= (c-backward-token-2 1 t lim) 0) nil)
-                          ((looking-at c-opt-inexpr-brace-list-key) t)
-                          ((looking-at "\\sw\\|\\s_\\|[.]")
-                           ;; Carry on looking if this is an
-                           ;; identifier (may contain "." in Apex)
-                           'dontknow)
-                          (t nil)))))
-          (cond
-           ((eq braceassignp t)
-            (c-beginning-of-statement-1
-             (c-most-enclosing-brace paren-state))
-            (setq bufpos (point)))
-           (t
-            (setq containing-sexp nil)))))
-      bufpos)))
+  (and (eq major-mode 'apex-mode)
+       (save-excursion
+         (let (bufpos braceassignp lim next-containing _macro-start)
+           (while (and (not bufpos)
+                       containing-sexp)
+             (when paren-state
+               (if (consp (car paren-state))
+                   (setq lim (cdr (car paren-state))
+                         paren-state (cdr paren-state))
+                 (setq lim (car paren-state)))
+               (when paren-state
+                 (setq next-containing (car paren-state)
+                       paren-state (cdr paren-state))))
+             (goto-char containing-sexp)
+             (if (c-looking-at-inexpr-block next-containing next-containing)
+                 ;; We're in an in-expression block of some kind.  Do not
+                 ;; check nesting.  We deliberately set the limit to the
+                 ;; containing sexp, so that c-looking-at-inexpr-block
+                 ;; doesn't check for an identifier before it.
+                 (setq containing-sexp nil)
+               (setq braceassignp 'dontknow)
+               (c-backward-token-2 1 t lim)
+               ;; Checks to do only on the first sexp before the brace.
+               (when (and c-opt-inexpr-brace-list-key
+                          (memq (char-after) '(?\[ ?\<)))
+                 ;; In Apex, an initialization brace list may follow
+                 ;; directly after "new Foo[]" or "List<...>" etc.,
+                 ;; so check for a "new" earlier.
+                 (while (eq braceassignp 'dontknow)
+                   (setq braceassignp
+                         (cond ((/= (c-backward-token-2 1 t lim) 0) nil)
+                               ((looking-at c-opt-inexpr-brace-list-key) t)
+                               ((looking-at "\\sw\\|\\s_\\|[.]")
+                                ;; Carry on looking if this is an
+                                ;; identifier (may contain "." in Apex)
+                                'dontknow)
+                               (t nil)))))
+               (cond
+                ((eq braceassignp t)
+                 (c-beginning-of-statement-1
+                  (c-most-enclosing-brace paren-state))
+                 (setq bufpos (point)))
+                (t (setq containing-sexp nil)))))
+           bufpos))))
 
-(advice-add 'c-inside-bracelist-p :around
-            (lambda (cc-fun &rest args)
-              (if (eq major-mode 'apex-mode)
-                  (apply 'apex-mode--c-inside-bracelist-p args)
-                (apply cc-fun args))))
+(advice-add 'c-inside-bracelist-p :before-until
+            'apex-mode--c-inside-bracelist-p)
 
 ;;;; cc-langs
 
