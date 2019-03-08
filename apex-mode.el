@@ -27,18 +27,11 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'cc-mode))
-
 (eval-and-compile
   (require 'apex-mode-cc-mode)
-  (require 'cc-defs)
-  (require 'cc-langs)
   (c-add-language 'apex-mode 'java-mode))
 
-(require 'cc-engine)
 (require 'cc-mode)
-(require 'cc-vars)
 
 ;;;; customization
 
@@ -140,10 +133,9 @@
 
 ;;;; imenu
 
-(eval-when-compile
-  (defconst cc-imenu-apex-generic-expression
-    cc-imenu-java-generic-expression
-    "Imenu generic expression for Apex mode.  See `imenu-generic-expression'."))
+(defconst cc-imenu-apex-generic-expression
+  cc-imenu-java-generic-expression
+  "Imenu generic expression for Apex mode.  See `imenu-generic-expression'.")
 
 ;;;; mode
 
@@ -164,9 +156,7 @@ Key bindings:
               (assq 'apex-mode c-default-style))
     (c-set-style "apex"))
   (easy-menu-add c-apex-menu)
-  (eval-when-compile
-    (require 'cc-menus)
-    (cc-imenu-init cc-imenu-apex-generic-expression))
+  (cc-imenu-init cc-imenu-apex-generic-expression)
   (setcar (nthcdr 2 font-lock-defaults) apex-mode-keywords-case-fold)
   (c-run-mode-hooks 'c-mode-common-hook))
 
