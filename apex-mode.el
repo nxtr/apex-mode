@@ -87,9 +87,10 @@
 (c-add-style
  "apex"
  '("java"
-   (c-offsets-alist . ((arglist-intro . *)
+   (c-offsets-alist . ((topmost-intro-cont . ++)
+                       (arglist-intro . ++)
                        (arglist-close . c-lineup-close-paren)
-                       (statement-cont . *)
+                       (inher-intro . ++)
                        (else-clause . apex-mode--lineup-else-after-when)))))
 
 (defun apex-mode--switch-when-clauses-regexp ()
