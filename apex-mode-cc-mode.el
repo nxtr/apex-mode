@@ -305,8 +305,8 @@ contains another declaration level that should be considered a class."
 inside function headers are also considered declarations in this
 sense."
   apex '("abstract" "final" "global" "override" "private" "protected" "public"
-         "with" "sharing" "without" "static" "testmethod" "transient"
-         "virtual" "webservice"))
+         "inherited" "with" "sharing" "without" "static" "testmethod"
+         "transient" "virtual" "webservice"))
 
 (c-lang-defconst c-other-decl-kwds
   "Keywords that can start or prefix any declaration level construct,
