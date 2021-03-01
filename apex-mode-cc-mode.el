@@ -1,6 +1,6 @@
 ;;; apex-mode-cc-mode.el --- cc-mode changes for Apex mode -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016-2019 Magnus Nyberg
+;; Copyright (C) 2016-2021 Magnus Nyberg
 
 ;; Author: Magnus Nyberg <magnus@nexter.se>
 ;; Keywords: apex, languages, force, sfdc, salesforce
